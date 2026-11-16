@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Transforms and PDE Crosswords</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: graph-paper page. Start form, then five units that open one after another, then a result slip. */
+:root {
+  --bg: #F3F6FA;
+  --paper: #FFFFFF;
+  --ink: #152033;
+  --muted: #566377;
+  --line: #D3DCE7;
+  --edge: #7F8FA5;
+  --accent: #2150D6;
+  --accent-ink: #FFFFFF;
+  --word: #DCE6FF;
+  --cur: #FFD66B;
+  --cur-ink: #1B1500;
+  --bad: #C23636;
+  --ok: #1B7F52;
+  --okbg: #E3F4EB;
+  --f-display: 'Bricolage Grotesque', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --f-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --cell: 24px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D131B; --paper: #141C27; --ink: #E4EAF3; --muted: #97A5B8; --line: #223043; --edge: #4C5D74;
+    --accent: #8AAAFF; --accent-ink: #0D1530; --word: #1F2F52; --cur: #8A6B12; --cur-ink: #FFF3CC;
+    --bad: #FF8F8F; --ok: #5ED39A; --okbg: #12301F; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D131B; --paper: #141C27; --ink: #E4EAF3; --muted: #97A5B8; --line: #223043; --edge: #4C5D74;
+  --accent: #8AAAFF; --accent-ink: #0D1530; --word: #1F2F52; --cur: #8A6B12; --cur-ink: #FFF3CC;
+  --bad: #FF8F8F; --ok: #5ED39A; --okbg: #12301F; color-scheme: dark;
+}
+@media (min-width: 480px) { :root { --cell: 28px; } }
+@media (min-width: 720px) { :root { --cell: 34px; } }
+
+* { box-sizing: border-box; }
+body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--line) 60%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 60%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+  color: var(--ink);
+  font: 400 15px/1.5 var(--f-body);
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1080px; margin-inline: auto; }
+.top { display: grid; gap: 8px; margin-bottom: 22px; }
+.eyebrow { margin: 0; font: 500 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 0; font: 700 clamp(30px, 6vw, 48px)/1.05 var(--f-display); letter-spacing: -.02em; text-wrap: balance; }
+.lede { margin: 0; max-width: 62ch; color: var(--muted); font-size: 16px; }
+
+.card, .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 20px; display: grid; gap: 14px; }
+.gate { max-width: 560px; }
+.gate h2, .result h2 { margin: 0; font: 700 clamp(22px, 4vw, 28px)/1.15 var(--f-display); }
+.rules { margin: 0; padding-left: 1.2em; color: var(--muted); display: grid; gap: 2px; }
+.field { display: grid; gap: 4px; }
+.field label, .lbl { font: 500 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.field input { font: 400 16px var(--f-body); padding: 10px 12px; border: 1px solid var(--edge); border-radius: 6px; background: var(--paper); color: var(--ink); width: 100%; }
+.field input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.err { margin: 0; min-height: 1.4em; color: var(--bad); font-weight: 500; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+
+.chip { margin: 0 0 12px; display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); align-items: baseline; }
+.chip .who { font-weight: 600; overflow-wrap: anywhere; }
+.chip .reg { font: 500 14px var(--f-mono); color: var(--muted); }
+.chip .fill { margin-left: auto; font: 500 13px var(--f-mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.flash { margin: 0 0 12px; padding: 10px 14px; border-radius: 6px; background: var(--okbg); color: var(--ok); font-weight: 600; border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent); }
+
+.tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; margin-bottom: 14px; }
+.tab {
+  display: grid; gap: 2px; text-align: left; cursor: pointer; min-width: 0;
+  padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--paper); color: var(--ink); font: inherit;
+}
+.tab .u { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tab .s { font: 600 14px var(--f-body); overflow-wrap: anywhere; }
+.tab .st { font: 500 12px var(--f-mono); color: var(--muted); }
+.tab.done .st { color: var(--ok); }
+.tab[disabled] { opacity: .55; cursor: not-allowed; }
+.tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tab[aria-selected="true"] .u, .tab[aria-selected="true"] .st { color: inherit; opacity: .9; }
+.tab:focus-visible, .btn:focus-visible, .clue-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.phead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 6px 24px; }
+.phead > * { min-width: 0; }
+.kicker { margin: 0 0 2px; font: 500 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h2 { margin: 0; font: 700 clamp(22px, 4vw, 30px)/1.15 var(--f-display); letter-spacing: -.01em; text-wrap: balance; }
+.eqn { margin: 0; font: 400 15px var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.topics { margin: 0; max-width: 75ch; color: var(--muted); }
+.lockedmsg { margin: 0; padding: 10px 14px; border-radius: 6px; background: var(--okbg); color: var(--ok); font-weight: 600; }
+
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; }
+.prog { margin: 0; font-variant-numeric: tabular-nums; }
+.prog b { font: 600 18px var(--f-mono); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { font: 500 14px var(--f-body); padding: 9px 16px; border: 1px solid var(--edge); border-radius: 6px; background: var(--paper); color: var(--ink); cursor: pointer; }
+a.btn { text-decoration: none; display: inline-block; }
+.btn:hover { background: var(--word); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+.now { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); min-height: 46px; }
+.now .lab { font: 500 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.now .clue { font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+
+.board { display: flex; flex-wrap: wrap; gap: 24px 32px; align-items: flex-start; }
+.gridwrap { position: relative; flex: 0 1 auto; max-width: 100%; min-width: 0; overflow-x: auto; padding: 0 1px 1px 0; }
+.grid { display: grid; grid-template-columns: repeat(var(--cols), var(--cell)); grid-auto-rows: var(--cell); width: max-content; }
+.void { width: var(--cell); height: var(--cell); }
+.cell {
+  position: relative; box-sizing: border-box; cursor: pointer; user-select: none; -webkit-user-select: none;
+  width: calc(var(--cell) + 1px); height: calc(var(--cell) + 1px); margin: 0 -1px -1px 0;
+  border: 1px solid var(--edge); background: var(--paper); color: var(--ink);
+}
+.cell .n { position: absolute; top: 1px; left: 2px; font: 500 max(8px, calc(var(--cell) * .3))/1 var(--f-mono); color: var(--muted); pointer-events: none; }
+.cell .ch { display: grid; place-items: center; height: 100%; padding-top: calc(var(--cell) * .12); font: 500 calc(var(--cell) * .58)/1 var(--f-mono); pointer-events: none; }
+.cell.word { background: var(--word); }
+.cell.cur { background: var(--cur); color: var(--cur-ink); z-index: 1; }
+.cell.cur .n { color: var(--cur-ink); }
+.panel.locked .cell { cursor: default; }
+.panel.locked .cell.word, .panel.locked .cell.cur { background: var(--paper); color: var(--ink); }
+.board.focused .cell.cur { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+.catcher { position: absolute; left: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; font-size: 16px; pointer-events: none; }
+
+.clues { flex: 1 1 320px; min-width: 0; display: grid; gap: 18px; }
+.clues h3 { margin: 0 0 4px; font: 500 12px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.clues ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.clue-btn { display: grid; grid-template-columns: 2.4em minmax(0, 1fr); gap: 4px; width: 100%; padding: 6px 8px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.clue-btn:hover { background: color-mix(in srgb, var(--word) 55%, transparent); }
+.clue-btn .cn { font: 600 13px/1.6 var(--f-mono); color: var(--accent); }
+.clue-btn .ct { overflow-wrap: anywhere; }
+.clue-btn .len { font: 400 12px var(--f-mono); color: var(--muted); white-space: nowrap; }
+.clue-btn.on { background: var(--word); }
+.clue-btn.also { background: color-mix(in srgb, var(--word) 50%, transparent); }
+
+.status { margin: 0; min-height: 1.5em; color: var(--muted); }
+.submitbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; padding-top: 4px; border-top: 1px solid var(--line); }
+.submitbar p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+.result { max-width: 680px; }
+.result .who { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.tablewrap { overflow-x: auto; }
+table.marks { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+table.marks th, table.marks td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; }
+table.marks th:first-child, table.marks td:first-child { text-align: left; }
+table.marks thead th { font: 500 12px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+table.marks tfoot th, table.marks tfoot td { font-weight: 700; border-bottom: 0; }
+textarea { width: 100%; font: 400 13px/1.55 var(--f-mono); padding: 10px 12px; border: 1px solid var(--edge); border-radius: 6px; background: var(--bg); color: var(--ink); resize: vertical; }
+
+@media (max-width: 480px) { .card, .panel { padding: 14px; } .chip .fill { margin-left: 0; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Five units &middot; open one after another &middot; 10 marks each</p>
+    <h1>Transforms and PDE Crosswords</h1>
+    <p class="lede">Solve Unit 1, submit it, and Unit 2 opens. Each unit is marked out of 10 and recorded against your name and registration number.</p>
+  </header>
+
+  <section class="card gate" id="gate" aria-labelledby="gateTitle">
+    <h2 id="gateTitle">Before you start</h2>
+    <ul class="rules">
+      <li>Type your name and registration number exactly as on your ID card.</li>
+      <li>Units open in order. Submit a unit to unlock the next one.</li>
+      <li>A submitted unit is locked and cannot be changed. Empty squares score nothing.</li>
+      <li>Your faculty can see your progress while you work. Keep this page open and stay online.</li>
+    </ul>
+    <div id="gateForm" role="group" aria-label="Student details">
+      <div class="field"><label for="sname">Full name</label><input id="sname" name="sname" type="text" autocomplete="off" maxlength="80"></div>
+      <div class="field" style="margin-top:12px"><label for="sreg">Registration number</label><input id="sreg" name="sreg" type="text" autocomplete="off" autocapitalize="characters" maxlength="24"></div>
+      <p class="err" id="gateErr" role="alert"></p>
+      <button class="btn primary" type="button" id="startBtn">Start crosswords</button>
+    </div>
+    <p class="hint">Your answers are saved on this device while you work, so a refresh will not lose them.</p>
+  </section>
+
+  <div id="app" hidden>
+    <p class="chip" id="chip"><span class="who" id="chipName"></span><span class="reg" id="chipReg"></span><span class="fill" id="chipFill"></span></p>
+    <p class="flash" id="flash" role="status" hidden></p>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Units"></div>
+    <div id="panels"></div>
+  </div>
+
+  <section class="card result" id="result" hidden aria-labelledby="resTitle">
+    <h2 id="resTitle">All units submitted</h2>
+    <p class="who" id="resWho"></p>
+    <div class="tablewrap">
+      <table class="marks">
+        <thead><tr><th>Unit</th><th>Marks</th><th>Out of</th></tr></thead>
+        <tbody id="resBody"></tbody>
+        <tfoot><tr><th>Total</th><td id="resTot"></td><td id="resOut"></td></tr></tfoot>
+      </table>
+    </div>
+    <p class="status" id="resStatus" role="status"></p>
+    <label class="lbl" for="slipText">Result slip</label>
+    <textarea id="slipText" readonly rows="12"></textarea>
+    <p class="hint">Your marks were sent to your faculty as you submitted each unit. If your faculty says they cannot see them, press the backup button and then press Submit on the form that opens.</p>
+    <div class="actions">
+      <button type="button" class="btn primary" id="copyBtn">Copy result slip</button>
+      <a class="btn" id="formBtn" target="_blank" rel="noopener" href="#">Send a backup copy</a>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  // Teacher settings. These point at the Google Form that records progress and marks.
+  var CONFIG = {
+    FORM_VIEW: 'https://docs.google.com/forms/d/e/1FAIpQLSdon2RIPiYIrKjpE6SSaupndJylsqZjXgYl8nSx5bABCItQag/viewform',
+    FORM_ACTION: 'https://docs.google.com/forms/d/e/1FAIpQLSdon2RIPiYIrKjpE6SSaupndJylsqZjXgYl8nSx5bABCItQag/formResponse',
+    FIELDS: { name: 'entry.1757850018', reg: 'entry.1234757325', status: 'entry.647834997', squares: 'entry.488433747', unit: 'entry.753382873', marks: 'entry.2122734294', result: 'entry.1027468538' },
+    HEARTBEAT_MS: 60000
+  };
+
+  var PUZZLES = [{"rows": 16, "cols": 16, "grid": [["", "H", "", "", "", "", "", "", "", "", "", "L", "", "", "", ""], ["", "O", "", "", "", "A", "R", "B", "I", "T", "R", "A", "R", "Y", "", ""], ["", "M", "", "", "", "", "", "", "", "", "", "G", "", "", "", ""], ["C", "O", "M", "P", "L", "E", "M", "E", "N", "T", "A", "R", "Y", "", "", ""], ["", "G", "", "A", "", "", "", "", "", "", "", "A", "", "O", "", "C"], ["D", "E", "G", "R", "E", "E", "", "", "", "G", "E", "N", "E", "R", "A", "L"], ["", "N", "", "T", "", "", "", "", "", "", "", "G", "", "D", "", "A"], ["", "E", "L", "I", "M", "I", "N", "A", "T", "E", "", "E", "", "E", "", "I"], ["", "O", "", "C", "", "", "", "", "", "", "O", "", "", "R", "", "R"], ["", "U", "", "U", "", "", "C", "H", "A", "R", "P", "I", "T", "", "", "A"], ["", "S", "", "L", "", "", "", "", "", "", "E", "", "", "", "", "U"], ["", "", "", "A", "U", "X", "I", "L", "I", "A", "R", "Y", "", "", "", "T"], ["", "", "", "R", "", "", "", "", "", "", "A", "", "", "", "", ""], ["", "", "", "", "C", "O", "M", "P", "L", "E", "T", "E", "", "", "", ""], ["", "", "", "", "", "", "", "", "", "", "O", "", "", "", "", ""], ["", "", "", "S", "I", "N", "G", "U", "L", "A", "R", "", "", "", "", ""]], "entries": [{"n": 1, "dir": "down", "r": 0, "c": 1, "answer": "HOMOGENEOUS", "clue": "Linear PDE in which every term has the same degree in D and D′"}, {"n": 2, "dir": "down", "r": 0, "c": 11, "answer": "LAGRANGE", "clue": "Surname attached to the linear first-order equation Pp + Qq = R"}, {"n": 3, "dir": "across", "r": 1, "c": 5, "answer": "ARBITRARY", "clue": "Kind of constant or function eliminated to form a PDE"}, {"n": 4, "dir": "across", "r": 3, "c": 0, "answer": "COMPLEMENTARY", "clue": "___ function: the part of a solution that comes from the equation with zero right-hand side"}, {"n": 5, "dir": "down", "r": 3, "c": 3, "answer": "PARTICULAR", "clue": "___ integral: any single solution of the non-homogeneous equation, found with 1/f(D, D′)"}, {"n": 6, "dir": "down", "r": 4, "c": 13, "answer": "ORDER", "clue": "Highest derivative that appears in a PDE decides this"}, {"n": 7, "dir": "down", "r": 4, "c": 15, "answer": "CLAIRAUT", "clue": "French mathematician behind the form z = px + qy + f(p, q)"}, {"n": 8, "dir": "across", "r": 5, "c": 0, "answer": "DEGREE", "clue": "Power of the highest-order derivative, once radicals are cleared"}, {"n": 9, "dir": "across", "r": 5, "c": 9, "answer": "GENERAL", "clue": "___ integral: a solution containing an arbitrary function"}, {"n": 10, "dir": "across", "r": 7, "c": 1, "answer": "ELIMINATE", "clue": "Remove the constants by differentiating, as the first step in forming a PDE"}, {"n": 11, "dir": "down", "r": 8, "c": 10, "answer": "OPERATOR", "clue": "D = ∂/∂x is a differential ___"}, {"n": 12, "dir": "across", "r": 9, "c": 6, "answer": "CHARPIT", "clue": "Lagrange's partner in the method for non-linear first-order PDEs (surname)"}, {"n": 13, "dir": "across", "r": 11, "c": 3, "answer": "AUXILIARY", "clue": "Lagrange's equations dx/P = dy/Q = dz/R are called these equations"}, {"n": 14, "dir": "across", "r": 13, "c": 4, "answer": "COMPLETE", "clue": "___ integral: a solution with as many arbitrary constants as independent variables"}, {"n": 15, "dir": "across", "r": 15, "c": 3, "answer": "SINGULAR", "clue": "___ integral: the envelope of the family given by the complete integral"}], "id": "u1", "n": 1, "short": "PDE", "title": "Partial Differential Equations", "topics": "Formation by eliminating constants and functions, standard first-order types, Lagrange's linear equation, higher-order linear equations with constant coefficients", "eq": "Pp + Qq = R"}, {"rows": 15, "cols": 16, "grid": [["", "", "E", "", "", "P", "", "", "", "", "", "", "", "", "", "C"], ["F", "O", "U", "R", "I", "E", "R", "", "", "H", "", "", "", "", "", "O"], ["", "", "L", "", "", "R", "", "", "", "A", "", "", "", "", "", "S"], ["E", "V", "E", "N", "", "I", "N", "T", "E", "R", "V", "A", "L", "", "", "I"], ["", "", "R", "", "", "O", "", "", "", "M", "", "", "", "", "", "N"], ["", "", "", "", "O", "D", "D", "", "C", "O", "N", "V", "E", "R", "G", "E"], ["P", "", "", "D", "", "I", "", "", "", "N", "", "", "", "", "", ""], ["A", "", "D", "I", "S", "C", "O", "N", "T", "I", "N", "U", "I", "T", "Y", ""], ["R", "", "", "R", "", "", "", "", "", "C", "", "", "", "", "", ""], ["S", "", "", "I", "", "", "", "", "S", "", "", "M", "", "", "", ""], ["E", "", "", "C", "O", "E", "F", "F", "I", "C", "I", "E", "N", "T", "", ""], ["V", "", "", "H", "", "", "", "", "N", "", "", "A", "", "", "", ""], ["A", "M", "P", "L", "I", "T", "U", "D", "E", "", "", "N", "", "", "", ""], ["L", "", "", "E", "", "", "", "", "", "", "", "", "", "", "", ""], ["", "O", "R", "T", "H", "O", "G", "O", "N", "A", "L", "", "", "", "", ""]], "entries": [{"n": 1, "dir": "down", "r": 0, "c": 2, "answer": "EULER", "clue": "Swiss mathematician whose formulae give a₀, aₙ and bₙ"}, {"n": 2, "dir": "down", "r": 0, "c": 5, "answer": "PERIODIC", "clue": "Repeating after a fixed interval, as f(x + 2π) = f(x)"}, {"n": 3, "dir": "down", "r": 0, "c": 15, "answer": "COSINE", "clue": "A function made of a constant plus terms in this appears in the even half-range series"}, {"n": 4, "dir": "across", "r": 1, "c": 0, "answer": "FOURIER", "clue": "French mathematician who studied heat flow and gave the series its name"}, {"n": 5, "dir": "down", "r": 1, "c": 9, "answer": "HARMONIC", "clue": "___ analysis: finding coefficients from a table of values"}, {"n": 6, "dir": "across", "r": 3, "c": 0, "answer": "EVEN", "clue": "Function with f(−x) = f(x), whose series has no bₙ terms"}, {"n": 7, "dir": "across", "r": 3, "c": 5, "answer": "INTERVAL", "clue": "A range such as (0, 2π) or (−l, l) on which the series is defined"}, {"n": 8, "dir": "across", "r": 5, "c": 4, "answer": "ODD", "clue": "Function with f(−x) = −f(x), whose series has only sine terms"}, {"n": 9, "dir": "across", "r": 5, "c": 8, "answer": "CONVERGE", "clue": "At a jump, the series does this to the average of the two one-sided limits"}, {"n": 10, "dir": "down", "r": 6, "c": 0, "answer": "PARSEVAL", "clue": "Identity equating the mean square of f(x) to a sum of squared coefficients"}, {"n": 11, "dir": "down", "r": 6, "c": 3, "answer": "DIRICHLET", "clue": "German mathematician whose conditions guarantee a Fourier series converges"}, {"n": 12, "dir": "across", "r": 7, "c": 2, "answer": "DISCONTINUITY", "clue": "A jump in f(x) where the series gives the average of both sides"}, {"n": 13, "dir": "down", "r": 9, "c": 8, "answer": "SINE", "clue": "The odd extension of f gives the half-range series in this function"}, {"n": 14, "dir": "down", "r": 9, "c": 11, "answer": "MEAN", "clue": "a₀/2 is the ___ value of f over a period"}, {"n": 15, "dir": "across", "r": 10, "c": 3, "answer": "COEFFICIENT", "clue": "Each of a₀, aₙ, bₙ is a Fourier ___"}, {"n": 16, "dir": "across", "r": 12, "c": 0, "answer": "AMPLITUDE", "clue": "Size of the nth harmonic, √(aₙ² + bₙ²)"}, {"n": 17, "dir": "across", "r": 14, "c": 1, "answer": "ORTHOGONAL", "clue": "The set {1, cos nx, sin nx} is ___ over one period"}], "id": "u2", "n": 2, "short": "Fourier Series", "title": "Fourier Series", "topics": "Dirichlet's conditions, general series, odd and even functions, half-range sine and cosine series, Parseval's identity, harmonic analysis", "eq": "f(x) = a₀/2 + Σ (aₙ cos nx + bₙ sin nx)"}, {"rows": 17, "cols": 17, "grid": [["", "", "", "", "", "", "", "", "", "I", "N", "I", "T", "I", "A", "L", ""], ["", "B", "", "", "", "", "", "", "S", "", "", "", "", "N", "", "", ""], ["", "O", "", "", "", "", "", "", "E", "", "", "V", "", "S", "", "H", ""], ["", "U", "", "", "", "T", "E", "M", "P", "E", "R", "A", "T", "U", "R", "E", ""], ["", "N", "", "", "", "", "", "", "A", "", "", "R", "", "L", "", "A", ""], ["", "D", "", "", "D", "I", "S", "C", "R", "I", "M", "I", "N", "A", "N", "T", ""], ["W", "A", "V", "E", "", "", "", "", "A", "", "", "A", "", "T", "", "", ""], ["", "R", "", "", "", "", "", "", "T", "", "", "B", "", "E", "", "", ""], ["H", "Y", "P", "E", "R", "B", "O", "L", "I", "C", "", "L", "", "D", "", "", ""], ["", "", "A", "", "", "", "", "", "O", "", "", "E", "", "", "L", "", ""], ["S", "T", "R", "I", "N", "G", "", "", "N", "", "", "S", "T", "E", "A", "D", "Y"], ["", "", "A", "", "", "", "", "", "", "", "", "", "", "", "P", "", ""], ["V", "I", "B", "R", "A", "T", "I", "N", "G", "", "", "", "", "", "L", "", ""], ["", "", "O", "", "", "", "", "", "", "", "", "", "", "", "A", "", ""], ["", "E", "L", "L", "I", "P", "T", "I", "C", "", "", "", "", "", "C", "", ""], ["", "", "I", "", "", "", "", "", "", "", "", "", "", "", "E", "", ""], ["", "", "C", "O", "N", "D", "U", "C", "T", "I", "O", "N", "", "", "", "", ""]], "entries": [{"n": 1, "dir": "across", "r": 0, "c": 9, "answer": "INITIAL", "clue": "___ conditions fix u(x, 0) and uₜ(x, 0)"}, {"n": 2, "dir": "down", "r": 0, "c": 13, "answer": "INSULATED", "clue": "Describes a rod whose sides let no heat escape"}, {"n": 3, "dir": "down", "r": 1, "c": 1, "answer": "BOUNDARY", "clue": "Conditions given at the ends of the string or rod"}, {"n": 4, "dir": "down", "r": 1, "c": 8, "answer": "SEPARATION", "clue": "___ of variables: assume u = X(x)T(t)"}, {"n": 5, "dir": "down", "r": 2, "c": 11, "answer": "VARIABLES", "clue": "x and t are the independent ones in u(x, t)"}, {"n": 6, "dir": "down", "r": 2, "c": 15, "answer": "HEAT", "clue": "Equation uₜ = α² uₓₓ"}, {"n": 7, "dir": "across", "r": 3, "c": 5, "answer": "TEMPERATURE", "clue": "What u(x, t) stands for in the heat equation"}, {"n": 8, "dir": "across", "r": 5, "c": 4, "answer": "DISCRIMINANT", "clue": "B² − 4AC is called this when classifying second-order PDEs"}, {"n": 9, "dir": "across", "r": 6, "c": 0, "answer": "WAVE", "clue": "Equation uₜₜ = c² uₓₓ"}, {"n": 10, "dir": "across", "r": 8, "c": 0, "answer": "HYPERBOLIC", "clue": "Type with B² − 4AC > 0; the wave equation is one"}, {"n": 11, "dir": "down", "r": 8, "c": 2, "answer": "PARABOLIC", "clue": "Type of PDE with B² − 4AC = 0; the heat equation is one"}, {"n": 12, "dir": "down", "r": 9, "c": 14, "answer": "LAPLACE", "clue": "Name on the steady-state equation uₓₓ + uᵧᵧ = 0"}, {"n": 13, "dir": "across", "r": 10, "c": 0, "answer": "STRING", "clue": "Taut elastic ___ fixed at x = 0 and x = l"}, {"n": 14, "dir": "across", "r": 10, "c": 11, "answer": "STEADY", "clue": "State in which ∂u/∂t = 0 because nothing changes with time"}, {"n": 15, "dir": "across", "r": 12, "c": 0, "answer": "VIBRATING", "clue": "Kind of string modelled by the one-dimensional wave equation"}, {"n": 16, "dir": "across", "r": 14, "c": 1, "answer": "ELLIPTIC", "clue": "Type with B² − 4AC < 0; Laplace's equation is one"}, {"n": 17, "dir": "across", "r": 16, "c": 2, "answer": "CONDUCTION", "clue": "Heat ___: flow of heat through a solid rod"}], "id": "u3", "n": 3, "short": "PDE Applications", "title": "Applications of Partial Differential Equations", "topics": "Classification of second-order PDEs, separation of variables, one-dimensional wave and heat equations, steady-state conditions", "eq": "uₜ = α² uₓₓ"}, {"rows": 16, "cols": 17, "grid": [["", "", "", "I", "", "", "", "", "S", "P", "E", "C", "T", "R", "U", "M", ""], ["K", "E", "R", "N", "E", "L", "", "", "C", "", "", "", "", "", "", "", ""], ["", "", "", "T", "", "", "T", "R", "A", "N", "S", "F", "O", "R", "M", "", ""], ["", "", "", "E", "", "", "", "", "L", "", "I", "", "", "", "O", "", "L"], ["", "", "", "G", "A", "U", "S", "S", "I", "A", "N", "", "", "", "D", "", "I"], ["P", "A", "I", "R", "", "", "", "", "N", "", "E", "", "C", "", "U", "", "N"], ["", "", "", "A", "", "", "", "", "G", "", "", "", "O", "", "L", "", "E"], ["", "", "", "L", "", "", "I", "", "", "", "P", "", "N", "", "A", "", "A"], ["", "", "", "", "", "", "N", "", "S", "", "A", "", "V", "", "T", "", "R"], ["", "", "", "", "", "", "V", "", "H", "", "R", "", "O", "", "I", "", "I"], ["", "C", "O", "S", "I", "N", "E", "", "I", "", "S", "", "L", "", "O", "", "T"], ["", "", "", "", "", "", "R", "", "F", "R", "E", "Q", "U", "E", "N", "C", "Y"], ["", "", "", "", "", "", "S", "", "T", "", "V", "", "T", "", "", "", ""], ["", "", "", "", "", "D", "E", "R", "I", "V", "A", "T", "I", "V", "E", "", ""], ["", "", "", "", "", "", "", "", "N", "", "L", "", "O", "", "", "", ""], ["", "", "", "", "", "", "", "", "G", "", "", "", "N", "", "", "", ""]], "entries": [{"n": 1, "dir": "down", "r": 0, "c": 3, "answer": "INTEGRAL", "clue": "Fourier ___ theorem writes f(x) as a double integral"}, {"n": 2, "dir": "across", "r": 0, "c": 8, "answer": "SPECTRUM", "clue": "Plot of |F(s)| against s"}, {"n": 2, "dir": "down", "r": 0, "c": 8, "answer": "SCALING", "clue": "Property relating F{f(ax)} to (1/|a|)F(s/a)"}, {"n": 3, "dir": "across", "r": 1, "c": 0, "answer": "KERNEL", "clue": "e^{isx} is the ___ of the transform"}, {"n": 4, "dir": "across", "r": 2, "c": 6, "answer": "TRANSFORM", "clue": "Integral operation that turns f(x) into F(s)"}, {"n": 5, "dir": "down", "r": 2, "c": 10, "answer": "SINE", "clue": "Transform suited to the odd extension of f on (0, ∞)"}, {"n": 6, "dir": "down", "r": 2, "c": 14, "answer": "MODULATION", "clue": "Multiplying f(x) by cos ax moves F to s ± a: this property"}, {"n": 7, "dir": "down", "r": 3, "c": 16, "answer": "LINEARITY", "clue": "Property that F{af + bg} = aF{f} + bF{g}"}, {"n": 8, "dir": "across", "r": 4, "c": 3, "answer": "GAUSSIAN", "clue": "e^(−x²/2) is this bell-shaped function, equal to its own transform"}, {"n": 9, "dir": "across", "r": 5, "c": 0, "answer": "PAIR", "clue": "A transform and its inverse form one of these"}, {"n": 10, "dir": "down", "r": 5, "c": 12, "answer": "CONVOLUTION", "clue": "Operation f * g whose transform equals the product F(s)G(s)"}, {"n": 11, "dir": "down", "r": 7, "c": 6, "answer": "INVERSE", "clue": "Formula that recovers f(x) from F(s)"}, {"n": 12, "dir": "down", "r": 7, "c": 10, "answer": "PARSEVAL", "clue": "Identity linking ∫|f|² dx with ∫|F|² ds"}, {"n": 13, "dir": "down", "r": 8, "c": 8, "answer": "SHIFTING", "clue": "Property relating F{f(x − a)} to e^{isa}F(s)"}, {"n": 14, "dir": "across", "r": 10, "c": 1, "answer": "COSINE", "clue": "Transform suited to the even extension of f on (0, ∞)"}, {"n": 15, "dir": "across", "r": 11, "c": 8, "answer": "FREQUENCY", "clue": "What the variable s in F(s) represents"}, {"n": 16, "dir": "across", "r": 13, "c": 5, "answer": "DERIVATIVE", "clue": "F{f′(x)} = −is F(s) gives the transform of this"}], "id": "u4", "n": 4, "short": "Fourier Transforms", "title": "Fourier Transforms", "topics": "Transform pair and properties, sine and cosine transforms, transforms of simple functions, convolution theorem, Parseval's identity", "eq": "F(s) = ∫ f(x) e^{isx} dx"}, {"rows": 16, "cols": 16, "grid": [["S", "", "S", "", "", "", "", "", "I", "M", "P", "U", "L", "S", "E", ""], ["E", "", "H", "", "", "", "R", "", "", "", "", "", "A", "", "", ""], ["Q", "", "I", "", "", "D", "E", "L", "A", "Y", "", "", "U", "", "", ""], ["U", "", "F", "", "", "", "S", "", "", "", "", "", "R", "", "", ""], ["E", "", "T", "", "", "", "I", "N", "V", "E", "R", "S", "E", "", "", ""], ["N", "", "I", "", "C", "", "D", "", "", "", "", "", "N", "", "C", ""], ["C", "O", "N", "V", "O", "L", "U", "T", "I", "O", "N", "", "T", "", "A", ""], ["E", "", "G", "", "N", "", "E", "", "", "", "", "", "", "", "U", ""], ["", "", "", "", "V", "", "", "", "", "", "", "", "D", "", "S", ""], ["D", "I", "F", "F", "E", "R", "E", "N", "C", "E", "", "F", "I", "N", "A", "L"], ["", "N", "", "", "R", "", "", "", "", "", "", "", "S", "", "L", ""], ["", "I", "", "", "G", "E", "O", "M", "E", "T", "R", "I", "C", "", "", ""], ["", "T", "", "", "E", "", "", "", "", "", "", "", "R", "", "", ""], ["F", "I", "B", "O", "N", "A", "C", "C", "I", "", "", "", "E", "", "", ""], ["", "A", "", "", "C", "", "", "", "", "", "", "S", "T", "E", "P", ""], ["", "L", "I", "N", "E", "A", "R", "I", "T", "Y", "", "", "E", "", "", ""]], "entries": [{"n": 1, "dir": "down", "r": 0, "c": 0, "answer": "SEQUENCE", "clue": "Ordered list {uₙ} on which the Z-transform acts"}, {"n": 2, "dir": "down", "r": 0, "c": 2, "answer": "SHIFTING", "clue": "Property giving Z{uₙ₊₁} = zF(z) − zu₀"}, {"n": 3, "dir": "across", "r": 0, "c": 8, "answer": "IMPULSE", "clue": "Unit ___ sequence δ(n) has transform 1"}, {"n": 4, "dir": "down", "r": 0, "c": 12, "answer": "LAURENT", "clue": "Series in positive and negative powers, named for a French mathematician"}, {"n": 5, "dir": "down", "r": 1, "c": 6, "answer": "RESIDUE", "clue": "At each pole, this is summed in the inversion integral method"}, {"n": 6, "dir": "across", "r": 2, "c": 5, "answer": "DELAY", "clue": "z⁻¹ stands for one unit of this"}, {"n": 7, "dir": "across", "r": 4, "c": 6, "answer": "INVERSE", "clue": "Recovering the sequence from F(z), often by partial fractions"}, {"n": 8, "dir": "down", "r": 5, "c": 4, "answer": "CONVERGENCE", "clue": "Region of ___: the z-values where the series sums"}, {"n": 9, "dir": "down", "r": 5, "c": 14, "answer": "CAUSAL", "clue": "A sequence that is zero for n < 0"}, {"n": 10, "dir": "across", "r": 6, "c": 0, "answer": "CONVOLUTION", "clue": "Z{f * g} = F(z)G(z) is this theorem"}, {"n": 11, "dir": "down", "r": 8, "c": 12, "answer": "DISCRETE", "clue": "The Z-transform is the ___ counterpart of the Laplace transform"}, {"n": 12, "dir": "across", "r": 9, "c": 0, "answer": "DIFFERENCE", "clue": "___ equation: links y(n + 2), y(n + 1) and y(n)"}, {"n": 13, "dir": "down", "r": 9, "c": 1, "answer": "INITIAL", "clue": "___ value theorem: u₀ = lim F(z) as z → ∞"}, {"n": 14, "dir": "across", "r": 9, "c": 11, "answer": "FINAL", "clue": "___ value theorem: lim uₙ = lim (z − 1)F(z) as z → 1"}, {"n": 15, "dir": "across", "r": 11, "c": 4, "answer": "GEOMETRIC", "clue": "Sequence aⁿ is this kind of progression, with transform z/(z − a)"}, {"n": 16, "dir": "across", "r": 13, "c": 0, "answer": "FIBONACCI", "clue": "Sequence 0, 1, 1, 2, 3, 5 ... solved via a difference equation"}, {"n": 17, "dir": "across", "r": 14, "c": 11, "answer": "STEP", "clue": "Unit ___ sequence has transform z/(z − 1)"}, {"n": 18, "dir": "across", "r": 15, "c": 1, "answer": "LINEARITY", "clue": "Property that Z{au + bv} = aZ{u} + bZ{v}"}], "id": "u5", "n": 5, "short": "Z-Transforms", "title": "Z-Transforms", "topics": "Z-transforms and properties, inverse Z-transforms, convolution theorem, solving linear difference equations with constant coefficients", "eq": "Z{uₙ} = Σ uₙ z⁻ⁿ"}];
+  var TITLE = 'Transforms and PDE Crosswords';
+  var other = function (d) { return d === 'across' ? 'down' : 'across'; };
+  var mk = function (tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; };
+  var esc = function (s) { return s.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var App = { started: false, finished: false, student: null, units: [], done: [null, null, null, null, null], cur: 0, onChange: function () {}, submitUnit: function () {} };
+
+  function load(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+
+  function makePanel(p, idx) {
+    var entries = p.entries.map(function (e, i) {
+      var cells = [];
+      for (var k = 0; k < e.answer.length; k++) cells.push(e.dir === 'across' ? [e.r, e.c + k] : [e.r + k, e.c]);
+      return Object.assign({}, e, { i: i, cells: cells });
+    });
+    var user = p.grid.map(function (r) { return r.map(function () { return ''; }); });
+    var at = { across: {}, down: {} }, numAt = {}, letterCells = 0;
+    p.grid.forEach(function (row) { row.forEach(function (ch) { if (ch) letterCells++; }); });
+    entries.forEach(function (e) {
+      numAt[e.r + ',' + e.c] = e.n;
+      e.cells.forEach(function (rc) { at[e.dir][rc[0] + ',' + rc[1]] = e.i; });
+    });
+    var entryAt = function (r, c, d) { var i = at[d][r + ',' + c]; return i == null ? null : entries[i]; };
+    var cur = { r: entries[0].r, c: entries[0].c, dir: entries[0].dir };
+    var cellEl = {}, clueBtns = [], hi = [], armedClear = false, armedSubmit = false, subTimer = null, locked = false;
+
+    var tab = mk('button', 'tab');
+    tab.type = 'button'; tab.id = 'tab-' + p.id; tab.setAttribute('role', 'tab'); tab.setAttribute('aria-controls', 'panel-' + p.id);
+    tab.innerHTML = '<span class="u">Unit ' + p.n + '</span><span class="s">' + esc(p.short) + '</span><span class="st"></span>';
+
+    var panel = mk('section', 'panel');
+    panel.id = 'panel-' + p.id; panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); panel.hidden = true;
+    panel.innerHTML =
+      '<div class="phead"><div><p class="kicker">Unit ' + p.n + '</p><h2>' + esc(p.title) + '</h2></div><p class="eqn" aria-hidden="true">' + esc(p.eq) + '</p></div>' +
+      '<p class="topics">' + esc(p.topics) + '.</p>' +
+      '<p class="lockedmsg" hidden></p>' +
+      '<div class="bar"><p class="prog"><b class="count">0</b> of ' + letterCells + ' squares filled</p>' +
+      '<div class="actions"><button type="button" class="btn" data-a="clear">Clear this grid</button></div></div>' +
+      '<p class="now"><span class="lab"></span><span class="clue"></span></p>' +
+      '<div class="board"><div class="gridwrap"><div class="grid" style="--cols:' + p.cols + '"></div>' +
+      '<input class="catcher" type="text" value=" " autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Type letters for the selected square in unit ' + p.n + ' crossword"></div>' +
+      '<div class="clues"><section><h3>Across</h3><ol class="across"></ol></section><section><h3>Down</h3><ol class="down"></ol></section></div></div>' +
+      '<p class="status" role="status"></p>' +
+      '<div class="submitbar"><p class="submsg">Submit this unit when you are done. It locks, and Unit ' + (p.n < 5 ? (p.n + 1) : 'results') + ' ' + (p.n < 5 ? 'opens.' : 'show.') + '</p>' +
+      '<button type="button" class="btn primary" data-a="submit">Submit Unit ' + p.n + '</button></div>';
+
+    var $ = function (s) { return panel.querySelector(s); };
+    var board = $('.board'), grid = $('.grid'), inp = $('.catcher'), lab = $('.lab'), clueText = $('.clue'), statusEl = $('.status'), countEl = $('.count');
+    var submitBtn = $('[data-a="submit"]'), subMsg = $('.submsg'), clearBtn = $('[data-a="clear"]'), lockedMsg = $('.lockedmsg');
+    var say = function (m) { statusEl.textContent = m; };
+    var subText = subMsg.textContent;
+
+    for (var r = 0; r < p.rows; r++) {
+      for (var c = 0; c < p.cols; c++) {
+        if (!p.grid[r][c]) { grid.appendChild(mk('div', 'void')); continue; }
+        var d = mk('div', 'cell');
+        d.setAttribute('aria-hidden', 'true');
+        var n = numAt[r + ',' + c];
+        if (n) { var ns = mk('span', 'n'); ns.textContent = n; d.appendChild(ns); }
+        d.appendChild(mk('span', 'ch'));
+        (function (rr, cc) {
+          d.addEventListener('click', function () {
+            if (locked) return;
+            if (cur.r === rr && cur.c === cc && entryAt(rr, cc, other(cur.dir))) setCursor(rr, cc, other(cur.dir));
+            else setCursor(rr, cc);
+            focusInput();
+          });
+        })(r, c);
+        cellEl[r + ',' + c] = d;
+        grid.appendChild(d);
+      }
+    }
+
+    ['across', 'down'].forEach(function (dir) {
+      var ol = $('.' + dir);
+      entries.filter(function (e) { return e.dir === dir; }).forEach(function (e) {
+        var li = mk('li'), b = mk('button', 'clue-btn');
+        b.type = 'button';
+        var cn = mk('span', 'cn'); cn.textContent = e.n;
+        var ct = mk('span', 'ct');
+        ct.appendChild(document.createTextNode(e.clue + ' '));
+        var len = mk('span', 'len'); len.textContent = '(' + e.answer.length + ')';
+        ct.appendChild(len);
+        b.appendChild(cn); b.appendChild(ct);
+        b.addEventListener('click', function () {
+          if (locked) return;
+          var first = e.cells.filter(function (rc) { return !user[rc[0]][rc[1]]; })[0] || e.cells[0];
+          setCursor(first[0], first[1], e.dir);
+          focusInput();
+        });
+        li.appendChild(b); ol.appendChild(li);
+        clueBtns[e.i] = b;
+      });
+    });
+
+    function focusInput() { try { inp.focus({ preventScroll: true }); inp.setSelectionRange(1, 1); } catch (x) {} }
+    function paint(r, c) { cellEl[r + ',' + c].querySelector('.ch').textContent = user[r][c]; }
+    function render() {
+      hi.forEach(function (x) { x.classList.remove('word', 'cur'); }); hi = [];
+      var e = entryAt(cur.r, cur.c, cur.dir);
+      e.cells.forEach(function (rc) { var d = cellEl[rc[0] + ',' + rc[1]]; d.classList.add('word'); hi.push(d); });
+      var cd = cellEl[cur.r + ',' + cur.c]; cd.classList.add('cur'); hi.push(cd);
+      lab.textContent = e.n + ' ' + e.dir + ' · ' + e.answer.length + ' letters';
+      clueText.textContent = e.clue;
+      clueBtns.forEach(function (b) { b.classList.remove('on', 'also'); });
+      clueBtns[e.i].classList.add('on');
+      var o = entryAt(cur.r, cur.c, other(cur.dir));
+      if (o) clueBtns[o.i].classList.add('also');
+    }
+    function setCursor(r, c, dir) {
+      dir = dir || cur.dir;
+      if (!entryAt(r, c, dir)) dir = other(dir);
+      cur.r = r; cur.c = c; cur.dir = dir; render();
+    }
+    function filled() {
+      var n = 0;
+      for (var r = 0; r < p.rows; r++) for (var c = 0; c < p.cols; c++) if (p.grid[r][c] && user[r][c]) n++;
+      return n;
+    }
+    function refresh() { countEl.textContent = filled(); }
+    function changed() { refresh(); App.onChange(); }
+    function type(ch) {
+      if (locked || !App.started) return;
+      var r = cur.r, c = cur.c;
+      user[r][c] = ch; paint(r, c);
+      var e = entryAt(r, c, cur.dir);
+      var k = e.cells.findIndex(function (rc) { return rc[0] === r && rc[1] === c; });
+      if (k < e.cells.length - 1) { cur.r = e.cells[k + 1][0]; cur.c = e.cells[k + 1][1]; }
+      render(); changed();
+    }
+    function backspace() {
+      if (locked || !App.started) return;
+      var r = cur.r, c = cur.c;
+      if (!user[r][c]) {
+        var e = entryAt(r, c, cur.dir);
+        var k = e.cells.findIndex(function (rc) { return rc[0] === r && rc[1] === c; });
+        if (k > 0) { r = e.cells[k - 1][0]; c = e.cells[k - 1][1]; cur.r = r; cur.c = c; }
+      }
+      user[r][c] = ''; paint(r, c); render(); changed();
+    }
+    function arrow(dr, dc) {
+      var dir = dr ? 'down' : 'across';
+      var r = cur.r + dr, c = cur.c + dc;
+      while (r >= 0 && c >= 0 && r < p.rows && c < p.cols && !p.grid[r][c]) { r += dr; c += dc; }
+      if (r >= 0 && c >= 0 && r < p.rows && c < p.cols) setCursor(r, c, dir);
+      else if (cur.dir !== dir) setCursor(cur.r, cur.c, dir);
+    }
+
+    inp.addEventListener('keydown', function (e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var k = e.key;
+      if (k === 'ArrowLeft') { e.preventDefault(); arrow(0, -1); }
+      else if (k === 'ArrowRight') { e.preventDefault(); arrow(0, 1); }
+      else if (k === 'ArrowUp') { e.preventDefault(); arrow(-1, 0); }
+      else if (k === 'ArrowDown') { e.preventDefault(); arrow(1, 0); }
+      else if (k === 'Backspace') { e.preventDefault(); backspace(); }
+      else if (k === 'Delete') { e.preventDefault(); if (!locked && App.started) { user[cur.r][cur.c] = ''; paint(cur.r, cur.c); changed(); } }
+      else if (k === 'Enter' || k === ' ') { e.preventDefault(); if (entryAt(cur.r, cur.c, other(cur.dir))) setCursor(cur.r, cur.c, other(cur.dir)); }
+      else if (/^[a-zA-Z]$/.test(k)) { e.preventDefault(); type(k.toUpperCase()); }
+    });
+    inp.addEventListener('input', function (e) {
+      var v = inp.value, t = e.inputType || '';
+      if (t.indexOf('delete') === 0 || v.length === 0) backspace();
+      else { var ch = v.slice(-1).toUpperCase(); if (/^[A-Z]$/.test(ch)) type(ch); }
+      inp.value = ' ';
+      try { inp.setSelectionRange(1, 1); } catch (x) {}
+    });
+    inp.addEventListener('focus', function () { board.classList.add('focused'); });
+    inp.addEventListener('blur', function () { board.classList.remove('focused'); });
+
+    clearBtn.addEventListener('click', function () {
+      if (locked) return;
+      if (!armedClear) {
+        armedClear = true; clearBtn.textContent = 'Confirm clear';
+        setTimeout(function () { armedClear = false; clearBtn.textContent = 'Clear this grid'; }, 3500);
+        return;
+      }
+      armedClear = false; clearBtn.textContent = 'Clear this grid';
+      for (var r = 0; r < p.rows; r++) for (var c = 0; c < p.cols; c++) { if (p.grid[r][c]) { user[r][c] = ''; paint(r, c); } }
+      say('Grid cleared.'); changed();
+    });
+
+    submitBtn.addEventListener('click', function () {
+      if (locked || !App.started || App.cur !== idx) return;
+      if (!armedSubmit) {
+        armedSubmit = true; submitBtn.textContent = 'Confirm: submit Unit ' + p.n;
+        subMsg.textContent = 'You have filled ' + filled() + ' of ' + letterCells + ' squares. After you confirm, this unit is locked.';
+        subTimer = setTimeout(function () { armedSubmit = false; submitBtn.textContent = 'Submit Unit ' + p.n; subMsg.textContent = subText; }, 6000);
+        return;
+      }
+      clearTimeout(subTimer); armedSubmit = false;
+      App.submitUnit(idx);
+    });
+
+    function lock(on, markText) {
+      locked = !!on;
+      panel.classList.toggle('locked', locked);
+      submitBtn.disabled = locked; clearBtn.disabled = locked;
+      submitBtn.textContent = locked ? 'Submitted' : 'Submit Unit ' + p.n;
+      lockedMsg.hidden = !locked; lockedMsg.textContent = locked ? (markText || '') : '';
+      if (locked) { hi.forEach(function (x) { x.classList.remove('word', 'cur'); }); hi = []; }
+      else render();
+    }
+
+    render();
+    return {
+      tab: tab, panel: panel, total: entries.length, cells: letterCells,
+      filled: filled, lock: lock,
+      score: function () { return entries.filter(function (e) { return e.cells.every(function (rc) { return user[rc[0]][rc[1]] === p.grid[rc[0]][rc[1]]; }); }).length; },
+      getGrid: function () { return user.map(function (row) { return row.slice(); }); },
+      setGrid: function (g) {
+        for (var r = 0; r < p.rows; r++) for (var c = 0; c < p.cols; c++) {
+          var v = g && g[r] && g[r][c];
+          if (p.grid[r][c] && typeof v === 'string' && /^[A-Z]$/.test(v)) { user[r][c] = v; paint(r, c); }
+        }
+        refresh();
+      }
+    };
+  }
+
+  var $id = function (id) { return document.getElementById(id); };
+  var gate = $id('gate'), nameIn = $id('sname'), regIn = $id('sreg'), gateErr = $id('gateErr'), startBtn = $id('startBtn');
+  var appEl = $id('app'), tabsEl = $id('tabs'), panelsEl = $id('panels'), chipFill = $id('chipFill'), flashEl = $id('flash');
+  var resEl = $id('result'), resStatus = $id('resStatus'), slipText = $id('slipText'), copyBtn = $id('copyBtn');
+  var active = 0, beat = null;
+
+  App.units = PUZZLES.map(makePanel);
+  App.units.forEach(function (u, i) {
+    tabsEl.appendChild(u.tab); panelsEl.appendChild(u.panel);
+    u.tab.addEventListener('click', function () { if (i <= App.cur) show(i); });
+    u.tab.addEventListener('keydown', function (e) {
+      var j = e.key === 'ArrowRight' ? Math.min(i + 1, App.cur) : e.key === 'ArrowLeft' ? Math.max(i - 1, 0) : -1;
+      if (j >= 0) { e.preventDefault(); show(j); App.units[j].tab.focus(); }
+    });
+  });
+  function updateTabs() {
+    App.units.forEach(function (u, i) {
+      var st = u.tab.querySelector('.st'), d = App.done[i];
+      u.tab.disabled = i > App.cur && !d;
+      u.tab.classList.toggle('done', !!d);
+      st.textContent = d ? d.marks + ' / 10' : (i === App.cur && !App.finished ? 'Open' : 'Locked');
+    });
+  }
+  function show(i) {
+    if (i > App.cur) i = App.cur;
+    App.units.forEach(function (u, j) {
+      u.panel.hidden = j !== i;
+      u.tab.setAttribute('aria-selected', j === i ? 'true' : 'false');
+      u.tab.tabIndex = j === i ? 0 : -1;
+    });
+    active = i;
+    var h = '#unit-' + (i + 1);
+    try { if (location.hash !== h) location.hash = 'unit-' + (i + 1); } catch (e) {}
+  }
+  function fromHash() { try { var m = /^#unit-([1-5])$/.exec(location.hash); return m ? Number(m[1]) - 1 : 0; } catch (e) { return 0; } }
+  window.addEventListener('hashchange', function () { if (!App.started || App.finished) return; var i = fromHash(); if (i <= App.cur && i !== active) show(i); });
+
+  function stateKey(reg) { return 'xwq2:state:' + reg; }
+  function persist() {
+    if (!App.student) return;
+    save(stateKey(App.student.reg), { name: App.student.name, grids: App.units.map(function (u) { return u.getGrid(); }), done: App.done, cur: App.cur });
+  }
+  App.onChange = function () {
+    var u = App.units[Math.min(App.cur, 4)];
+    chipFill.textContent = 'Unit ' + (Math.min(App.cur, 4) + 1) + ' of 5 · ' + u.filled() + ' of ' + u.cells + ' squares';
+    persist();
+  };
+
+  function whenText(iso) {
+    try { return new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return String(iso); }
+  }
+  function hashId(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return ('XW-' + h.toString(36).toUpperCase()).slice(0, 10);
+  }
+  var round1 = function (x) { return Math.round(x * 10) / 10; };
+
+  /* ---- sending to the Google Form (silent, with a retry queue for the important messages) ---- */
+  var OUT_KEY = 'xwq2:outbox', flushing = false;
+  function postForm(rec) {
+    var F = CONFIG.FIELDS, b = new URLSearchParams();
+    b.set(F.name, rec.name); b.set(F.reg, rec.reg); b.set(F.status, rec.status);
+    b.set(F.squares, String(rec.squares)); b.set(F.unit, String(rec.unit));
+    b.set(F.marks, String(rec.marks)); b.set(F.result, rec.result);
+    return fetch(CONFIG.FORM_ACTION, { method: 'POST', mode: 'no-cors', body: b, keepalive: true });
+  }
+  function mkRec(status, unit, squares, marks, body) {
+    return { name: App.student.name, reg: App.student.reg, status: status, unit: unit, squares: squares, marks: marks, result: 't=' + new Date().toISOString() + (body ? '\n' + body : '') };
+  }
+  function ping(status) {
+    if (!App.student || App.finished) return;
+    try {
+      var i = Math.min(App.cur, 4);
+      postForm(mkRec(status, i + 1, App.units[i].filled(), '-', '')).catch(function () {});
+    } catch (e) {}
+  }
+  function enqueue(rec) {
+    var q = load(OUT_KEY) || []; q.push(rec); save(OUT_KEY, q); flush();
+  }
+  function flush() {
+    if (flushing) return;
+    if (!(load(OUT_KEY) || []).length) return;
+    flushing = true;
+    (function next() {
+      var q = load(OUT_KEY) || [];
+      if (!q.length) { flushing = false; return; }
+      var p;
+      try { p = postForm(q[0]); } catch (e) { flushing = false; return; }
+      p.then(function () { var c = load(OUT_KEY) || []; c.shift(); save(OUT_KEY, c); next(); }, function () { flushing = false; });
+    })();
+  }
+
+  /* ---- slips ---- */
+  function unitSlip(i, rec) {
+    return [TITLE + ' - Unit ' + (i + 1) + ' result', '', 'Name: ' + App.student.name, 'Registration number: ' + App.student.reg, 'Submitted: ' + whenText(rec.time), '',
+      'Unit ' + (i + 1) + ' - ' + PUZZLES[i].title + ': ' + rec.marks + ' / 10  (' + rec.words + ' of ' + rec.wordsOutOf + ' words)', 'Slip ID: ' + rec.slipId].join('\n');
+  }
+  function totalMarks() { return round1(App.done.reduce(function (a, d) { return a + (d ? d.marks : 0); }, 0)); }
+  function fullSlip() {
+    var last = App.done[4] ? App.done[4].time : new Date().toISOString();
+    var lines = [TITLE + ' - result slip', '', 'Name: ' + App.student.name, 'Registration number: ' + App.student.reg, 'Completed: ' + whenText(last), ''];
+    PUZZLES.forEach(function (p, i) { var d = App.done[i]; lines.push('Unit ' + p.n + ' - ' + p.title + ': ' + (d ? d.marks : 0) + ' / 10' + (d ? '  (' + d.words + ' of ' + d.wordsOutOf + ' words)' : '')); });
+    lines.push('', 'Total: ' + totalMarks() + ' / 50', 'Slip ID: ' + hashId(App.student.reg + '|' + App.done.map(function (d) { return d ? d.slipId : ''; }).join(',')));
+    return lines.join('\n');
+  }
+  function showFinal() {
+    App.finished = true;
+    if (beat) { clearInterval(beat); beat = null; }
+    var slip = fullSlip();
+    $id('resWho').textContent = App.student.name + '  |  ' + App.student.reg;
+    var body = $id('resBody'); body.textContent = '';
+    PUZZLES.forEach(function (p, i) {
+      var d = App.done[i], tr = mk('tr');
+      ['Unit ' + p.n + ' - ' + p.title + (d ? ' (' + d.words + ' of ' + d.wordsOutOf + ' words)' : ''), d ? d.marks : 0, 10].forEach(function (v) { var td = mk('td'); td.textContent = v; tr.appendChild(td); });
+      body.appendChild(tr);
+    });
+    $id('resTot').textContent = totalMarks(); $id('resOut').textContent = 50;
+    slipText.value = slip;
+    var F = CONFIG.FIELDS;
+    $id('formBtn').href = CONFIG.FORM_VIEW + '?usp=pp_url&' + F.name + '=' + encodeURIComponent(App.student.name) + '&' + F.reg + '=' + encodeURIComponent(App.student.reg) +
+      '&' + F.status + '=' + encodeURIComponent('Backup copy') + '&' + F.squares + '=' + encodeURIComponent(App.units.reduce(function (a, u) { return a + u.filled(); }, 0)) +
+      '&' + F.unit + '=' + encodeURIComponent('All') + '&' + F.marks + '=' + encodeURIComponent(totalMarks()) + '&' + F.result + '=' + encodeURIComponent(slip);
+    var pending = (load(OUT_KEY) || []).length;
+    resStatus.textContent = pending ? 'Some marks are still waiting to be sent. Keep this page open with internet on for a minute.' : 'All five units are submitted and your marks have been sent.';
+    gate.hidden = true; appEl.hidden = true; resEl.hidden = false;
+  }
+  copyBtn.addEventListener('click', function () {
+    var done = function () { resStatus.textContent = 'Result slip copied.'; };
+    var fallback = function () { slipText.focus(); slipText.select(); resStatus.textContent = 'Slip selected. Press Ctrl+C (or Copy on your phone).'; };
+    try { navigator.clipboard.writeText(slipText.value).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  /* ---- submitting one unit ---- */
+  App.submitUnit = function (i) {
+    if (App.done[i] || i !== App.cur) return;
+    var u = App.units[i], words = u.score(), total = u.total, sq = u.filled();
+    var iso = new Date().toISOString();
+    var rec = { marks: round1(words / total * 10), words: words, wordsOutOf: total, squares: sq, time: iso };
+    rec.slipId = hashId(App.student.reg + '|' + (i + 1) + '|' + iso + '|' + rec.marks);
+    App.done[i] = rec;
+    u.lock(true, 'Unit ' + (i + 1) + ' submitted: ' + rec.marks + ' / 10 (' + words + ' of ' + total + ' words). This unit is locked.');
+    enqueue(mkRec('Unit submitted', i + 1, sq, rec.marks, unitSlip(i, rec)));
+    var msg;
+    if (i < 4) { App.cur = i + 1; msg = 'Unit ' + (i + 1) + ' submitted: ' + rec.marks + ' / 10. Unit ' + (i + 2) + ' is now open.'; }
+    else {
+      App.cur = 5;
+      var slip = fullSlip();
+      enqueue(mkRec('Completed', 'All', App.units.reduce(function (a, x) { return a + x.filled(); }, 0), totalMarks(), slip));
+    }
+    persist(); updateTabs();
+    if (i < 4) {
+      flashEl.textContent = msg; flashEl.hidden = false;
+      show(App.cur); App.onChange();
+      try { window.scrollTo(0, 0); } catch (e) {}
+      ping('Working');
+    } else { showFinal(); try { window.scrollTo(0, 0); } catch (e) {} }
+  };
+
+  function startNow() {
+    try { startInner(); } catch (err) { gateErr.textContent = 'Could not start: ' + (err && err.message ? err.message : err); }
+  }
+  function startInner() {
+    var name = nameIn.value.replace(/\s+/g, ' ').trim();
+    var reg = regIn.value.replace(/\s+/g, '').toUpperCase();
+    if (name.length < 2) { gateErr.textContent = 'Enter your full name.'; nameIn.focus(); return; }
+    if (!/^[A-Z0-9]{6,20}$/.test(reg)) { gateErr.textContent = 'Enter your registration number using letters and digits only, 6 to 20 characters.'; regIn.focus(); return; }
+    gateErr.textContent = '';
+    App.student = { name: name, reg: reg };
+    $id('chipName').textContent = name; $id('chipReg').textContent = reg;
+    var st = load(stateKey(reg));
+    if (st && st.grids) {
+      App.units.forEach(function (u, i) { u.setGrid(st.grids[i]); });
+      if (st.done && st.done.length === 5) App.done = st.done.map(function (d) { return d && typeof d.marks === 'number' ? d : null; });
+      App.cur = 0; while (App.cur < 5 && App.done[App.cur]) App.cur++;
+    }
+    App.done.forEach(function (d, i) {
+      if (d) App.units[i].lock(true, 'Unit ' + (i + 1) + ' submitted: ' + d.marks + ' / 10 (' + d.words + ' of ' + d.wordsOutOf + ' words). This unit is locked.');
+    });
+    App.started = true;
+    updateTabs();
+    flush();
+    if (App.cur >= 5) { showFinal(); return; }
+    gate.hidden = true; appEl.hidden = false;
+    App.onChange();
+    show(App.cur);
+    ping('Started');
+    if (beat) clearInterval(beat);
+    beat = setInterval(function () { if (document.visibilityState === 'hidden') return; ping('Working'); flush(); }, CONFIG.HEARTBEAT_MS);
+  }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && App.started && !App.finished) { ping('Working'); flush(); } });
+  startBtn.addEventListener('click', startNow);
+  [nameIn, regIn].forEach(function (el) {
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); startNow(); } });
+  });
+})();
+</script>
+</body>
+</html>
